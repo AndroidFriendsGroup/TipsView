@@ -4,11 +4,13 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.support.annotation.AttrRes;
@@ -20,6 +22,7 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 
 import code.the.fuck.com.tipsview.R;
+import code.the.fuck.com.tipsview.tipenum.TipTypeValue;
 
 
 /**
@@ -40,11 +43,17 @@ public class TipsView extends FrameLayout {
 
     private Rect targetViewRect;
     private Point globalOffset;
+
     //用来绘画的bitmap
+
     private Bitmap drawingBitmap;
+
     private Canvas drawCanvas;
 
     private Bitmap tipsBitmap;
+
+    // 掏空的类型,默认为圆形
+    private int tipsType = TipTypeValue.OVAL;
 
     private OnClickListener mOnClickListener;
 
@@ -61,15 +70,12 @@ public class TipsView extends FrameLayout {
         initView();
     }
 
+
+    public void setTipsType(int tipsType) {
+        this.tipsType = tipsType;
+    }
+
     private void initView() {
-        try {
-            BitmapDrawable d = (BitmapDrawable) getContext().getResources().getDrawable(R.drawable.ic_test_share);
-            if (d != null) {
-                tipsBitmap = d.getBitmap();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         setWillNotDraw(false);
         setVisibility(GONE);
@@ -114,7 +120,8 @@ public class TipsView extends FrameLayout {
         targetView.getGlobalVisibleRect(targetViewRect);
 
         if (!targetViewRect.isEmpty()) {
-            //statusbar的高度
+
+            //statusbar 的高度
             targetViewRect.offset(0, -globalOffset.y);
             isPrepared = true;
         } else {
@@ -123,7 +130,7 @@ public class TipsView extends FrameLayout {
                 public void onGlobalLayout() {
                     targetView.getGlobalVisibleRect(targetViewRect, globalOffset);
                     if (!targetViewRect.isEmpty()) {
-                        //statusbar的高度
+                        //statusbar 的高度
                         targetViewRect.offset(0, -globalOffset.y);
                         isPrepared = true;
                     }
@@ -150,16 +157,34 @@ public class TipsView extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        if (!isPrepared) return;
+        if (!isPrepared) {
+            return;
+        }
 
         final int width = getMeasuredWidth();
         final int height = getMeasuredHeight();
 
-        if (width <= 0 || height <= 0) return;
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+
+        if (tipsBitmap == null) {
+            try {
+                BitmapDrawable d = (BitmapDrawable) getContext().getResources().getDrawable(R.drawable.ic_test_share);
+                if (d != null) {
+                    tipsBitmap = d.getBitmap();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
 
         if (drawingBitmap == null || drawCanvas == null) {
 
-            if (drawingBitmap != null) drawingBitmap.recycle();
+            if (drawingBitmap != null) {
+                drawingBitmap.recycle();
+            }
 
             drawingBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 
@@ -170,19 +195,58 @@ public class TipsView extends FrameLayout {
 
         //清除画布
         drawCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+
         //蒙层颜色
         drawCanvas.drawColor(maskColor);
-        //掏空一个圈O
-        drawCanvas.drawCircle(targetViewRect.centerX(), targetViewRect.centerY(), DEFAULT_RADIUS + targetViewRect.width() / 2, mEraser);
-        if (tipsBitmap != null) {
-            int left = targetViewRect.centerX() - tipsBitmap.getWidth();
-            int top = targetViewRect.bottom + 5;
-            drawCanvas.drawBitmap(tipsBitmap, left, top, mPaint);
+
+//        // 根据类型决定掏空的类型
+//
+//        // 圆形或者虚线圆形
+        if (tipsType == TipTypeValue.OVAL || tipsType == TipTypeValue.DASHED_OVAL) {
+            drawCanvas.drawCircle(targetViewRect.centerX(), targetViewRect.centerY(), DEFAULT_RADIUS + targetViewRect.width() / 2, mEraser);
+        } else {
+            drawCanvas.drawRect(targetViewRect.left , targetViewRect.top , targetViewRect.right , targetViewRect.bottom , mEraser);
         }
+
+        // 处理虚线逻辑
+
+        Paint dashedPaint = new Paint();
+        dashedPaint.setStyle(Paint.Style.STROKE);
+        dashedPaint.setAntiAlias(true);
+        dashedPaint.setStrokeWidth(2);
+        dashedPaint.setColor(0xFFFFFFFF);
+        dashedPaint.setPathEffect(new DashPathEffect(new float[]{4, 4}, 0));
+
         //画好bitmap后，把新画布应用到当前画布中
         canvas.drawBitmap(drawingBitmap, 0, 0, null);
 
+        if (tipsType == TipTypeValue.DASHED_OVAL) {
+            canvas.drawCircle(targetViewRect.centerX(), targetViewRect.centerY(), DEFAULT_RADIUS + targetViewRect.width() / 2 + 5, dashedPaint);
+        }
+
+        if (tipsType == TipTypeValue.DASHED_RECT) {
+            RectF rectF = new RectF();
+            rectF.top = targetViewRect.top-20;
+            rectF.left = targetViewRect.left-20;
+            rectF.right = targetViewRect.right+20;
+            rectF.bottom = targetViewRect.bottom+20;
+            canvas.drawRoundRect(rectF, 10, 10, dashedPaint);
+        }
+
+
+        // 添加额外的提示bitmap
+        if (tipsBitmap != null) {
+            int left = targetViewRect.centerX() - tipsBitmap.getWidth();
+            int top = targetViewRect.bottom + 25;
+            drawCanvas.drawBitmap(tipsBitmap, left, top, mPaint);
+        }
+
+
+//
+
+
     }
+
 
     public OnClickListener getOnTapListener() {
         return mOnClickListener;
@@ -211,5 +275,4 @@ public class TipsView extends FrameLayout {
             tipsBitmap = null;
         }
     }
-
 }

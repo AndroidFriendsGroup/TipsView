@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import java.util.Random;
 
+import code.the.fuck.com.tipsview.tipenum.TipTypeValue;
 import code.the.fuck.com.tipsview.utils.UIHelper;
 import code.the.fuck.com.tipsview.widget.TipsView;
 
@@ -69,12 +70,16 @@ public class MainActivity extends AppCompatActivity {
             removeTips();
         }
         mTipsView.show(v);
+
         ((ViewGroup) getWindow().getDecorView()).addView(mTipsView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
     }
 
     private void checkTipsView() {
-        if (mTipsView != null) return;
+        if (mTipsView != null) {
+            return;
+        }
         mTipsView = new TipsView(this);
+        mTipsView.setTipsType(TipTypeValue.DASHED_RECT);
         mTipsView.setOnTapListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
