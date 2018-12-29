@@ -15,6 +15,7 @@ import android.support.annotation.AttrRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
@@ -92,9 +93,26 @@ public class TipsView extends FrameLayout {
                     mOnClickListener.onClick(v);
                 }
                 setVisibility(GONE);
-                destroy();
             }
         });
+    }
+
+    public void show(final View targetView, Bitmap tipsBitmap) {
+        if (this.tipsBitmap != null) {
+            this.tipsBitmap.recycle();
+            this.tipsBitmap = null;
+        }
+        this.tipsBitmap = tipsBitmap;
+        show(targetView);
+    }
+
+    public void show(final View targetView, View tipsView) {
+        if (tipsBitmap != null) {
+            tipsBitmap.recycle();
+            tipsBitmap = null;
+        }
+        tipsBitmap = getViewBitmap(tipsView,150,70);
+        show(targetView);
     }
 
     public void show(final View targetView) {
@@ -174,10 +192,12 @@ public class TipsView extends FrameLayout {
         drawCanvas.drawColor(maskColor);
         //掏空一个圈O
         drawCanvas.drawCircle(targetViewRect.centerX(), targetViewRect.centerY(), DEFAULT_RADIUS + targetViewRect.width() / 2, mEraser);
-        if (tipsBitmap != null) {
+        if (tipsBitmap != null && !tipsBitmap.isRecycled()) {
             int left = targetViewRect.centerX() - tipsBitmap.getWidth();
             int top = targetViewRect.bottom + 5;
             drawCanvas.drawBitmap(tipsBitmap, left, top, mPaint);
+        } else if(true){//添加自定义View
+
         }
         //画好bitmap后，把新画布应用到当前画布中
         canvas.drawBitmap(drawingBitmap, 0, 0, null);
@@ -212,4 +232,52 @@ public class TipsView extends FrameLayout {
         }
     }
 
+    public static Bitmap convertViewToBitmap(View view, int bitmapWidth, int bitmapHeight) {
+        Bitmap bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        view.draw(canvas);
+        return bitmap;
+    }
+
+    public Bitmap getViewBitmap(View comBitmap, int width, int height) {
+        Bitmap bitmap = null;
+        if (comBitmap != null) {
+            comBitmap.clearFocus();
+            comBitmap.setPressed(false);
+
+            boolean willNotCache = comBitmap.willNotCacheDrawing();
+            comBitmap.setWillNotCacheDrawing(false);
+
+            // Reset the drawing cache background color to fully transparent
+            // for the duration of this operation
+            int color = comBitmap.getDrawingCacheBackgroundColor();
+            comBitmap.setDrawingCacheBackgroundColor(0);
+            float alpha = comBitmap.getAlpha();
+            comBitmap.setAlpha(1.0f);
+
+            if (color != 0) {
+                comBitmap.destroyDrawingCache();
+            }
+
+            int widthSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY);
+            int heightSpec = View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY);
+            comBitmap.measure(widthSpec, heightSpec);
+            comBitmap.layout(0, 0, width, height);
+
+            comBitmap.buildDrawingCache();
+            Bitmap cacheBitmap = comBitmap.getDrawingCache();
+            if (cacheBitmap == null) {
+                Log.e("view.ProcessImageToBlur", "failed getViewBitmap(" + comBitmap + ")",
+                        new RuntimeException());
+                return null;
+            }
+            bitmap = Bitmap.createBitmap(cacheBitmap);
+            // Restore the view
+            comBitmap.setAlpha(alpha);
+            comBitmap.destroyDrawingCache();
+            comBitmap.setWillNotCacheDrawing(willNotCache);
+            comBitmap.setDrawingCacheBackgroundColor(color);
+        }
+        return bitmap;
+    }
 }

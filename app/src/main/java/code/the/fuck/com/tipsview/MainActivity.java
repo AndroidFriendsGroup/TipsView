@@ -1,7 +1,11 @@
 package code.the.fuck.com.tipsview;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -39,7 +43,9 @@ public class MainActivity extends AppCompatActivity {
         tvTest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showTips(v);
+                showTipsWithLayout(v);
+//                showTipsWithCustomizedView(v);
+//                showTips(v);
             }
         });
 
@@ -60,6 +66,32 @@ public class MainActivity extends AppCompatActivity {
                 .translationX(x)
                 .translationY(y)
                 .start();
+    }
+
+    private void showTipsWithLayout(View v) {
+        checkTipsView();
+        //must remove first
+        if (mTipsView.getParent() != null) {
+            removeTips();
+        }
+
+        View tipsView = LayoutInflater.from(this).inflate(R.layout.layout_tips, null);
+
+        mTipsView.show(v,tipsView);
+        ((ViewGroup) getWindow().getDecorView()).addView(mTipsView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+    }
+
+    private void showTipsWithCustomizedView(View v) {
+        checkTipsView();
+        //must remove first
+        if (mTipsView.getParent() != null) {
+            removeTips();
+        }
+        Bitmap srcBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_test_share);
+        Bitmap tipsBitmap = Bitmap.createScaledBitmap(srcBitmap, 150, 75, true);
+        srcBitmap.recycle();
+        mTipsView.show(v,tipsBitmap);
+        ((ViewGroup) getWindow().getDecorView()).addView(mTipsView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
     }
 
     private void showTips(View v) {
@@ -85,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void removeTips() {
         ((ViewGroup) mTipsView.getParent()).removeView(mTipsView);
+        mTipsView = null;
     }
 
 }
