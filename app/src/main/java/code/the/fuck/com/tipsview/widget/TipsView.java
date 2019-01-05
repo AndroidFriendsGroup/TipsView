@@ -15,7 +15,9 @@ import android.support.annotation.AttrRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.LayoutDirection;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
@@ -46,6 +48,7 @@ public class TipsView extends FrameLayout {
     private Canvas drawCanvas;
 
     private Bitmap tipsBitmap;
+    private View tipsView;
 
     private OnClickListener mOnClickListener;
 
@@ -60,6 +63,66 @@ public class TipsView extends FrameLayout {
     public TipsView(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         initView();
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (tipsView != null) {
+            tipsView.layout(left, top, right, bottom);
+            if (tipsView.getVisibility() != GONE) {
+                final LayoutParams lp = (LayoutParams) tipsView.getLayoutParams();
+
+                final int width2 = tipsView.getMeasuredWidth();
+//                final int height = tipsView.getMeasuredHeight();
+                final int width = 150;
+                final int height = 150;
+
+                int childLeft;
+                int childTop;
+
+                int gravity = lp.gravity;
+                if (gravity == -1) {
+                    gravity = Gravity.TOP | Gravity.START;
+                }
+
+                int layoutDirection = LayoutDirection.LTR;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                    layoutDirection = getLayoutDirection();
+                }
+                final int absoluteGravity = Gravity.getAbsoluteGravity(gravity, layoutDirection);
+                final int verticalGravity = gravity & Gravity.VERTICAL_GRAVITY_MASK;
+
+                switch (absoluteGravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
+                    case Gravity.CENTER_HORIZONTAL:
+                        childLeft = targetViewRect.left - width - lp.rightMargin;
+                        break;
+                    case Gravity.RIGHT:
+                        childLeft = targetViewRect.right + lp.leftMargin;
+                        break;
+                    case Gravity.LEFT:
+                        childLeft = targetViewRect.left - width - lp.rightMargin;
+                    default:
+                        childLeft = targetViewRect.right + lp.leftMargin;
+                }
+
+                switch (verticalGravity) {
+                    case Gravity.TOP:
+                        childTop = targetViewRect.top + height + lp.bottomMargin;
+                        break;
+                    case Gravity.CENTER_VERTICAL:
+                        childTop = targetViewRect.centerY() + height / 2 + lp.topMargin - lp.bottomMargin;
+                        break;
+                    case Gravity.BOTTOM:
+                        childTop = targetViewRect.bottom + lp.topMargin;
+                        break;
+                    default:
+                        childTop = targetViewRect.bottom + lp.topMargin;
+                }
+
+                tipsView.layout(childLeft, childTop, childLeft + width2, childTop + height);
+            }
+        }
     }
 
     private void initView() {
@@ -97,28 +160,32 @@ public class TipsView extends FrameLayout {
         });
     }
 
-    public void show(final View targetView, Bitmap tipsBitmap) {
+    public TipsView show(final View targetView, Bitmap tipsBitmap) {
         if (this.tipsBitmap != null) {
             this.tipsBitmap.recycle();
             this.tipsBitmap = null;
         }
         this.tipsBitmap = tipsBitmap;
         show(targetView);
+        return this;
     }
 
-    public void show(final View targetView, View tipsView) {
+    public TipsView show(final View targetView, View tipsView) {
         if (tipsBitmap != null) {
             tipsBitmap.recycle();
             tipsBitmap = null;
         }
-        tipsBitmap = getViewBitmap(tipsView,150,70);
+//        tipsBitmap = getViewBitmap(tipsView,150,70);
+        this.tipsView = tipsView;
+        addView(tipsView);
         show(targetView);
+        return this;
     }
 
-    public void show(final View targetView) {
+    public TipsView show(final View targetView) {
         if (targetView == null) {
             isPrepared = false;
-            return;
+            return this;
         }
 
         if (globalOffset == null) {
@@ -162,6 +229,7 @@ public class TipsView extends FrameLayout {
             setVisibility(VISIBLE);
             postInvalidate();
         }
+        return this;
     }
 
     @Override

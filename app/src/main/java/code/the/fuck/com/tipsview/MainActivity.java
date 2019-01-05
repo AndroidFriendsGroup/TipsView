@@ -115,9 +115,4 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void removeTips() {
-        ((ViewGroup) mTipsView.getParent()).removeView(mTipsView);
-        mTipsView = null;
-    }
-
 }
