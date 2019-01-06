@@ -2,6 +2,7 @@ package code.the.fuck.com.tipsview.widget;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -9,15 +10,11 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.support.annotation.AttrRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.LayoutDirection;
-import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
@@ -48,6 +45,7 @@ public class TipsView extends FrameLayout {
     private Bitmap drawingBitmap;
     private Canvas drawCanvas;
 
+    private ImageView imageView = null;
     private Bitmap tipsBitmap;
     private View customTipsView;
     private View targetView;
@@ -69,8 +67,13 @@ public class TipsView extends FrameLayout {
 
     public TipsView build(TipsViewBuilder builder) {
         this.customTipsView = builder.customTipsView;
-        this.tipsBitmap = builder.tipsBitmap;
+        if (builder.tipsBitmap != null) {
+            this.tipsBitmap = builder.tipsBitmap;
+        }
         this.targetView = builder.targetView;
+
+        imageView = new ImageView(getContext());
+        imageView.setImageBitmap(tipsBitmap);
         return this;
     }
 
@@ -79,27 +82,21 @@ public class TipsView extends FrameLayout {
         super.onLayout(changed, left, top, right, bottom);
         if (customTipsView != null) {
             layoutCustomView(left, top, right, bottom);
-        } else if (tipsBitmap != null){
+        } else if (imageView != null){
             layoutBitmap(left, top, right, bottom);
         }
     }
 
     void layoutBitmap(int left, int top, int right, int bottom) {
-        if (tipsBitmap != null) {
-            ImageView imageView = new ImageView(getContext());
-            imageView.setImageBitmap(tipsBitmap);
-            addView(imageView);
-
-            final int width = 400;
-            final int height = 100;
+        if (imageView != null) {
 
             int childLeft;
             int childTop;
 
-            childLeft = targetViewRect.left - width/2;
-            childTop = targetViewRect.bottom;
+            childLeft = targetViewRect.centerX() - tipsBitmap.getWidth();
+            childTop = targetViewRect.bottom + 5;
 
-            imageView.layout(childLeft, childTop, childLeft+width, childTop+height);
+            imageView.layout(childLeft, childTop, childLeft+tipsBitmap.getWidth(), childTop+tipsBitmap.getHeight());
         }
     }
 
@@ -108,64 +105,29 @@ public class TipsView extends FrameLayout {
             if (customTipsView.getVisibility() != GONE) {
                 final LayoutParams lp = (LayoutParams) customTipsView.getLayoutParams();
 
-                final int width2 = customTipsView.getMeasuredWidth();
-//                final int height = customTipsView.getMeasuredHeight();
+                final int measuredWidth = customTipsView.getMeasuredWidth();
+                final int measuredHeight = customTipsView.getMeasuredHeight();
+
                 final int width = 150;
                 final int height = 150;
 
                 int childLeft;
                 int childTop;
+                childLeft = targetViewRect.left - width - lp.rightMargin;
+                childTop = targetViewRect.bottom + lp.topMargin;
 
-                int gravity = lp.gravity;
-                if (gravity == -1) {
-                    gravity = Gravity.TOP | Gravity.START;
-                }
-
-                int layoutDirection = LayoutDirection.LTR;
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                    layoutDirection = getLayoutDirection();
-                }
-                final int absoluteGravity = Gravity.getAbsoluteGravity(gravity, layoutDirection);
-                final int verticalGravity = gravity & Gravity.VERTICAL_GRAVITY_MASK;
-
-                switch (absoluteGravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
-                    case Gravity.CENTER_HORIZONTAL:
-                        childLeft = targetViewRect.left - width - lp.rightMargin;
-                        break;
-                    case Gravity.RIGHT:
-                        childLeft = targetViewRect.right + lp.leftMargin;
-                        break;
-                    case Gravity.LEFT:
-                        childLeft = targetViewRect.left - width - lp.rightMargin;
-                    default:
-                        childLeft = targetViewRect.right + lp.leftMargin;
-                }
-
-                switch (verticalGravity) {
-                    case Gravity.TOP:
-                        childTop = targetViewRect.top + height + lp.bottomMargin;
-                        break;
-                    case Gravity.CENTER_VERTICAL:
-                        childTop = targetViewRect.centerY() + height / 2 + lp.topMargin - lp.bottomMargin;
-                        break;
-                    case Gravity.BOTTOM:
-                        childTop = targetViewRect.bottom + lp.topMargin;
-                        break;
-                    default:
-                        childTop = targetViewRect.bottom + lp.topMargin;
-                }
-
-                customTipsView.layout(childLeft, childTop, childLeft + width2, childTop + height);
+                customTipsView.layout(childLeft, childTop, childLeft + measuredWidth, childTop + height);
             }
         }
     }
 
     private void initView() {
         try {
-            BitmapDrawable d = (BitmapDrawable) getContext().getResources().getDrawable(R.drawable.ic_test_share);
+            tipsBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_test_share);
+            /*BitmapDrawable d = (BitmapDrawable) getContext().getResources().getDrawable(R.drawable.ic_test_share);
             if (d != null) {
                 tipsBitmap = d.getBitmap();
-            }
+            }*/
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -200,8 +162,10 @@ public class TipsView extends FrameLayout {
             isPrepared = false;
             return this;
         }
-        if (customTipsView != null) {
+        if (customTipsView != null) {//自定义View传入
             addView(customTipsView);
+        }else if (imageView != null) {//bitmap方式
+            addView(imageView);
         }
 
         if (globalOffset == null) {
@@ -314,54 +278,5 @@ public class TipsView extends FrameLayout {
             tipsBitmap.recycle();
             tipsBitmap = null;
         }
-    }
-
-    public static Bitmap convertViewToBitmap(View view, int bitmapWidth, int bitmapHeight) {
-        Bitmap bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        view.draw(canvas);
-        return bitmap;
-    }
-
-    public Bitmap getViewBitmap(View comBitmap, int width, int height) {
-        Bitmap bitmap = null;
-        if (comBitmap != null) {
-            comBitmap.clearFocus();
-            comBitmap.setPressed(false);
-
-            boolean willNotCache = comBitmap.willNotCacheDrawing();
-            comBitmap.setWillNotCacheDrawing(false);
-
-            // Reset the drawing cache background color to fully transparent
-            // for the duration of this operation
-            int color = comBitmap.getDrawingCacheBackgroundColor();
-            comBitmap.setDrawingCacheBackgroundColor(0);
-            float alpha = comBitmap.getAlpha();
-            comBitmap.setAlpha(1.0f);
-
-            if (color != 0) {
-                comBitmap.destroyDrawingCache();
-            }
-
-            int widthSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY);
-            int heightSpec = View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY);
-            comBitmap.measure(widthSpec, heightSpec);
-            comBitmap.layout(0, 0, width, height);
-
-            comBitmap.buildDrawingCache();
-            Bitmap cacheBitmap = comBitmap.getDrawingCache();
-            if (cacheBitmap == null) {
-                Log.e("view.ProcessImageToBlur", "failed getViewBitmap(" + comBitmap + ")",
-                        new RuntimeException());
-                return null;
-            }
-            bitmap = Bitmap.createBitmap(cacheBitmap);
-            // Restore the view
-            comBitmap.setAlpha(alpha);
-            comBitmap.destroyDrawingCache();
-            comBitmap.setWillNotCacheDrawing(willNotCache);
-            comBitmap.setDrawingCacheBackgroundColor(color);
-        }
-        return bitmap;
     }
 }
