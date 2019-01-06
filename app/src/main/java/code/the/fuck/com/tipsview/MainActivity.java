@@ -2,12 +2,10 @@ package code.the.fuck.com.tipsview;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -15,6 +13,7 @@ import java.util.Random;
 
 import code.the.fuck.com.tipsview.utils.UIHelper;
 import code.the.fuck.com.tipsview.widget.TipsView;
+import code.the.fuck.com.tipsview.widget.TipsViewBuilder;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 showTipsWithLayout(v);
-//                showTipsWithCustomizedView(v);
+//                showTipsWithBitmap(v);
 //                showTips(v);
             }
         });
@@ -69,50 +68,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showTipsWithLayout(View v) {
-        checkTipsView();
-        //must remove first
-        if (mTipsView.getParent() != null) {
-            removeTips();
-        }
-
         View tipsView = LayoutInflater.from(this).inflate(R.layout.layout_tips, null);
-
-        mTipsView.show(v,tipsView);
-        ((ViewGroup) getWindow().getDecorView()).addView(mTipsView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        TipsViewBuilder
+                .with(this)
+                .target(v)
+                .customTips(tipsView)
+                .show(this);
     }
 
-    private void showTipsWithCustomizedView(View v) {
-        checkTipsView();
-        //must remove first
-        if (mTipsView.getParent() != null) {
-            removeTips();
-        }
+    private void showTipsWithBitmap(View v) {
         Bitmap srcBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_test_share);
-        Bitmap tipsBitmap = Bitmap.createScaledBitmap(srcBitmap, 150, 75, true);
-        srcBitmap.recycle();
-        mTipsView.show(v,tipsBitmap);
-        ((ViewGroup) getWindow().getDecorView()).addView(mTipsView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        TipsViewBuilder
+                .with(this)
+                .target(v)
+                .bitmapTips(srcBitmap)
+                .show(this);
     }
 
     private void showTips(View v) {
-        checkTipsView();
-        //must remove first
-        if (mTipsView.getParent() != null) {
-            removeTips();
-        }
-        mTipsView.show(v);
-        ((ViewGroup) getWindow().getDecorView()).addView(mTipsView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        TipsViewBuilder
+                .with(this)
+                .target(v)
+                .show(this);
     }
-
-    private void checkTipsView() {
-        if (mTipsView != null) return;
-        mTipsView = new TipsView(this);
-        mTipsView.setOnTapListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                removeTips();
-            }
-        });
-    }
-
 }

@@ -1,5 +1,6 @@
 package code.the.fuck.com.tipsview.widget;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.view.View;
@@ -49,7 +50,7 @@ public class TipsViewBuilder {
     }
 
     public TipsView build() {
-        final TipsView mTipsView = new TipsView(getContext());
+        final TipsView mTipsView = new TipsView(getContext()).build(this);
         mTipsView.setOnTapListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -63,15 +64,10 @@ public class TipsViewBuilder {
         return mTipsView;
     }
 
-    public TipsView show(int anchorViewResid) {
+    public TipsView show(Activity activity) {
         TipsView tipsView = build();
-        if (customTipsView != null) {
-            tipsView.show(targetView,customTipsView);
-        } else if (tipsBitmap != null) {
-            tipsView.show(targetView,tipsBitmap);
-        } else {
-            tipsView.show(targetView);
-        }
+        tipsView.show(targetView);
+        ((ViewGroup) activity.getWindow().getDecorView()).addView(tipsView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         return tipsView;
     }
 

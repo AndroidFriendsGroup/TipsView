@@ -21,6 +21,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 
 import code.the.fuck.com.tipsview.R;
 
@@ -48,7 +49,8 @@ public class TipsView extends FrameLayout {
     private Canvas drawCanvas;
 
     private Bitmap tipsBitmap;
-    private View tipsView;
+    private View customTipsView;
+    private View targetView;
 
     private OnClickListener mOnClickListener;
 
@@ -65,16 +67,49 @@ public class TipsView extends FrameLayout {
         initView();
     }
 
+    public TipsView build(TipsViewBuilder builder) {
+        this.customTipsView = builder.customTipsView;
+        this.tipsBitmap = builder.tipsBitmap;
+        this.targetView = builder.targetView;
+        return this;
+    }
+
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-        if (tipsView != null) {
-            tipsView.layout(left, top, right, bottom);
-            if (tipsView.getVisibility() != GONE) {
-                final LayoutParams lp = (LayoutParams) tipsView.getLayoutParams();
+        if (customTipsView != null) {
+            layoutCustomView(left, top, right, bottom);
+        } else if (tipsBitmap != null){
+            layoutBitmap(left, top, right, bottom);
+        }
+    }
 
-                final int width2 = tipsView.getMeasuredWidth();
-//                final int height = tipsView.getMeasuredHeight();
+    void layoutBitmap(int left, int top, int right, int bottom) {
+        if (tipsBitmap != null) {
+            ImageView imageView = new ImageView(getContext());
+            imageView.setImageBitmap(tipsBitmap);
+            addView(imageView);
+
+            final int width = 400;
+            final int height = 100;
+
+            int childLeft;
+            int childTop;
+
+            childLeft = targetViewRect.left - width/2;
+            childTop = targetViewRect.bottom;
+
+            imageView.layout(childLeft, childTop, childLeft+width, childTop+height);
+        }
+    }
+
+    void layoutCustomView(int left, int top, int right, int bottom) {
+        if (customTipsView != null) {
+            if (customTipsView.getVisibility() != GONE) {
+                final LayoutParams lp = (LayoutParams) customTipsView.getLayoutParams();
+
+                final int width2 = customTipsView.getMeasuredWidth();
+//                final int height = customTipsView.getMeasuredHeight();
                 final int width = 150;
                 final int height = 150;
 
@@ -120,7 +155,7 @@ public class TipsView extends FrameLayout {
                         childTop = targetViewRect.bottom + lp.topMargin;
                 }
 
-                tipsView.layout(childLeft, childTop, childLeft + width2, childTop + height);
+                customTipsView.layout(childLeft, childTop, childLeft + width2, childTop + height);
             }
         }
     }
@@ -160,32 +195,13 @@ public class TipsView extends FrameLayout {
         });
     }
 
-    public TipsView show(final View targetView, Bitmap tipsBitmap) {
-        if (this.tipsBitmap != null) {
-            this.tipsBitmap.recycle();
-            this.tipsBitmap = null;
-        }
-        this.tipsBitmap = tipsBitmap;
-        show(targetView);
-        return this;
-    }
-
-    public TipsView show(final View targetView, View tipsView) {
-        if (tipsBitmap != null) {
-            tipsBitmap.recycle();
-            tipsBitmap = null;
-        }
-//        tipsBitmap = getViewBitmap(tipsView,150,70);
-        this.tipsView = tipsView;
-        addView(tipsView);
-        show(targetView);
-        return this;
-    }
-
     public TipsView show(final View targetView) {
         if (targetView == null) {
             isPrepared = false;
             return this;
+        }
+        if (customTipsView != null) {
+            addView(customTipsView);
         }
 
         if (globalOffset == null) {
@@ -260,13 +276,13 @@ public class TipsView extends FrameLayout {
         drawCanvas.drawColor(maskColor);
         //掏空一个圈O
         drawCanvas.drawCircle(targetViewRect.centerX(), targetViewRect.centerY(), DEFAULT_RADIUS + targetViewRect.width() / 2, mEraser);
-        if (tipsBitmap != null && !tipsBitmap.isRecycled()) {
+        /*if (tipsBitmap != null && !tipsBitmap.isRecycled()) {
             int left = targetViewRect.centerX() - tipsBitmap.getWidth();
             int top = targetViewRect.bottom + 5;
             drawCanvas.drawBitmap(tipsBitmap, left, top, mPaint);
         } else if(true){//添加自定义View
 
-        }
+        }*/
         //画好bitmap后，把新画布应用到当前画布中
         canvas.drawBitmap(drawingBitmap, 0, 0, null);
 
