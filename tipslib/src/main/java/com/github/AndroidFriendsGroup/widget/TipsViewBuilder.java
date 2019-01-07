@@ -1,8 +1,9 @@
-package code.the.fuck.com.tipsview.widget;
+package com.github.AndroidFriendsGroup.widget;
 
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -78,4 +79,56 @@ public class TipsViewBuilder {
     private Context getContext() {
         return mContextWeakReference == null ? null : mContextWeakReference.get();
     }
+
+
+    public abstract class Params<B extends Params> {
+        TipsViewBuilder mViewBuilder;
+        int width;
+        int height;
+        int gravity = Gravity.BOTTOM | Gravity.LEFT;
+
+        private Params(TipsViewBuilder viewBuilder) {
+            mViewBuilder = viewBuilder;
+        }
+
+        public B setWidth(int width) {
+            this.width = width;
+            return self();
+        }
+
+        public B setHeight(int height) {
+            this.height = height;
+            return self();
+        }
+
+        public B setGravity(int gravity) {
+            this.gravity = gravity;
+            return self();
+        }
+
+        public B self() {
+            return (B) this;
+        }
+
+        abstract void destroy();
+    }
+
+    public class ViewParams extends Params<ViewParams> {
+        View customTipsView;
+
+        private ViewParams(TipsViewBuilder viewBuilder) {
+            super(viewBuilder);
+        }
+
+        public ViewParams addView(View customTipsView) {
+            this.customTipsView = customTipsView;
+            return self();
+        }
+
+        @Override
+        void destroy() {
+            customTipsView = null;
+        }
+    }
+
 }

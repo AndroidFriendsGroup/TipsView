@@ -1,8 +1,7 @@
-package code.the.fuck.com.tipsview.widget;
+package com.github.AndroidFriendsGroup.widget;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -20,16 +19,16 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import code.the.fuck.com.tipsview.R;
-
 
 /**
  * Created by 大灯泡 on 2017/9/13.
  * <p>
  * 用于View的高亮指引
+ * <p>
+ * 使用请看{@link TipsViewBuilder}
  */
 
-public class TipsView extends FrameLayout {
+class TipsView extends FrameLayout {
     private static final int DEFAULT_RADIUS = -5;
 
     private int maskColor = 0xCC000000;
@@ -82,7 +81,7 @@ public class TipsView extends FrameLayout {
         super.onLayout(changed, left, top, right, bottom);
         if (customTipsView != null) {
             layoutCustomView(left, top, right, bottom);
-        } else if (imageView != null){
+        } else if (imageView != null) {
             layoutBitmap(left, top, right, bottom);
         }
     }
@@ -96,7 +95,7 @@ public class TipsView extends FrameLayout {
             childLeft = targetViewRect.centerX() - tipsBitmap.getWidth();
             childTop = targetViewRect.bottom + 5;
 
-            imageView.layout(childLeft, childTop, childLeft+tipsBitmap.getWidth(), childTop+tipsBitmap.getHeight());
+            imageView.layout(childLeft, childTop, childLeft + tipsBitmap.getWidth(), childTop + tipsBitmap.getHeight());
         }
     }
 
@@ -123,7 +122,7 @@ public class TipsView extends FrameLayout {
 
     private void initView() {
         try {
-            tipsBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_test_share);
+//            tipsBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_test_share);
             /*BitmapDrawable d = (BitmapDrawable) getContext().getResources().getDrawable(R.drawable.ic_test_share);
             if (d != null) {
                 tipsBitmap = d.getBitmap();
@@ -164,7 +163,7 @@ public class TipsView extends FrameLayout {
         }
         if (customTipsView != null) {//自定义View传入
             addView(customTipsView);
-        }else if (imageView != null) {//bitmap方式
+        } else if (imageView != null) {//bitmap方式
             addView(imageView);
         }
 

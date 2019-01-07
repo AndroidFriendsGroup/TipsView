@@ -1,4 +1,4 @@
-package code.the.fuck.com.tipsview.utils;
+package com.github.AndroidFriendsGroup.demo.utils;
 
 import android.content.res.Resources;
 import android.support.annotation.StringRes;

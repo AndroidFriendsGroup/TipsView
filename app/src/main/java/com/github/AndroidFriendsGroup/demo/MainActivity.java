@@ -1,4 +1,4 @@
-package code.the.fuck.com.tipsview;
+package com.github.AndroidFriendsGroup.demo;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -9,16 +9,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.util.Random;
+import com.github.AndroidFriendsGroup.R;
+import com.github.AndroidFriendsGroup.demo.utils.UIHelper;
+import com.github.AndroidFriendsGroup.widget.TipsViewBuilder;
 
-import code.the.fuck.com.tipsview.utils.UIHelper;
-import code.the.fuck.com.tipsview.widget.TipsView;
-import code.the.fuck.com.tipsview.widget.TipsViewBuilder;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvTest;
-    private TipsView mTipsView;
     private Button mBtnRandomLayout;
     Random mRandom = new Random();
 
