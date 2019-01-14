@@ -28,7 +28,7 @@ import android.widget.ImageView;
  * 使用请看{@link TipsViewBuilder}
  */
 
-class TipsView extends FrameLayout {
+public class TipsView extends FrameLayout {
     private static final int DEFAULT_RADIUS = -5;
 
     private int maskColor = 0xCC000000;
@@ -48,32 +48,22 @@ class TipsView extends FrameLayout {
     private Bitmap tipsBitmap;
     private View customTipsView;
     private View targetView;
+    private TipsViewBuilder mViewBuilder;
 
     private OnClickListener mOnClickListener;
 
-    public TipsView(@NonNull Context context) {
-        this(context, null);
+    TipsView(@NonNull Context context, TipsViewBuilder builder) {
+        this(context, null,builder);
     }
 
-    public TipsView(@NonNull Context context, @Nullable AttributeSet attrs) {
-        this(context, attrs, 0);
+    TipsView(@NonNull Context context, @Nullable AttributeSet attrs, TipsViewBuilder builder) {
+        this(context, attrs, 0,builder);
     }
 
-    public TipsView(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr) {
+    TipsView(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr, TipsViewBuilder builder) {
         super(context, attrs, defStyleAttr);
+        mViewBuilder = builder;
         initView();
-    }
-
-    public TipsView build(TipsViewBuilder builder) {
-        this.customTipsView = builder.customTipsView;
-        if (builder.tipsBitmap != null) {
-            this.tipsBitmap = builder.tipsBitmap;
-        }
-        this.targetView = builder.targetView;
-
-        imageView = new ImageView(getContext());
-        imageView.setImageBitmap(tipsBitmap);
-        return this;
     }
 
     @Override
@@ -121,6 +111,7 @@ class TipsView extends FrameLayout {
     }
 
     private void initView() {
+
         try {
 //            tipsBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_test_share);
             /*BitmapDrawable d = (BitmapDrawable) getContext().getResources().getDrawable(R.drawable.ic_test_share);
