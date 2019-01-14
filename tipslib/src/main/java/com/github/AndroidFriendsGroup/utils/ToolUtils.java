@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 
+import java.util.List;
+
 /**
  * Created by 大灯泡 on 2019/1/7.
  */
@@ -27,4 +29,9 @@ public class ToolUtils {
         }
         return null;
     }
+
+    public static boolean isListEmpty(List<?> datas) {
+        return datas == null || datas.size() <= 0;
+    }
+
 }

@@ -68,6 +68,10 @@ public class TipsViewBuilder {
         return mTipsView;
     }
 
+    List<Params> getParams() {
+        return mParams;
+    }
+
     public TipsView show(Activity activity) {
         TipsView tipsView = build();
         ((ViewGroup) activity.getWindow().getDecorView()).addView(tipsView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -152,6 +156,10 @@ public class TipsViewBuilder {
             return mViewBuilder.append(bitmap);
         }
 
+        View getTips(){
+            return null;
+        }
+
         B self() {
             return (B) this;
         }
@@ -170,7 +178,10 @@ public class TipsViewBuilder {
             this.customTipsView = customTipsView;
             return self();
         }
-
+        @Override
+        View getTips() {
+            return customTipsView;
+        }
         @Override
         void destroy() {
             customTipsView = null;
@@ -188,6 +199,11 @@ public class TipsViewBuilder {
             imageView = new ImageView(getContext());
             imageView.setImageBitmap(bitmap);
             return this;
+        }
+
+        @Override
+        View getTips() {
+            return imageView;
         }
 
         @Override

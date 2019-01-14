@@ -9,15 +9,18 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
-import android.os.Build;
 import android.support.annotation.AttrRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.ViewTreeObserver;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+
+import com.github.AndroidFriendsGroup.utils.ToolUtils;
+
+import java.util.List;
 
 
 /**
@@ -29,6 +32,7 @@ import android.widget.ImageView;
  */
 
 public class TipsView extends FrameLayout {
+    private static final String TAG = "TipsView";
     private static final int DEFAULT_RADIUS = -5;
 
     private int maskColor = 0xCC000000;
@@ -53,11 +57,11 @@ public class TipsView extends FrameLayout {
     private OnClickListener mOnClickListener;
 
     TipsView(@NonNull Context context, TipsViewBuilder builder) {
-        this(context, null,builder);
+        this(context, null, builder);
     }
 
     TipsView(@NonNull Context context, @Nullable AttributeSet attrs, TipsViewBuilder builder) {
-        this(context, attrs, 0,builder);
+        this(context, attrs, 0, builder);
     }
 
     TipsView(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr, TipsViewBuilder builder) {
@@ -69,54 +73,19 @@ public class TipsView extends FrameLayout {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-        if (customTipsView != null) {
-            layoutCustomView(left, top, right, bottom);
-        } else if (imageView != null) {
-            layoutBitmap(left, top, right, bottom);
-        }
-    }
-
-    void layoutBitmap(int left, int top, int right, int bottom) {
-        if (imageView != null) {
-
-            int childLeft;
-            int childTop;
-
-            childLeft = targetViewRect.centerX() - tipsBitmap.getWidth();
-            childTop = targetViewRect.bottom + 5;
-
-            imageView.layout(childLeft, childTop, childLeft + tipsBitmap.getWidth(), childTop + tipsBitmap.getHeight());
-        }
-    }
-
-    void layoutCustomView(int left, int top, int right, int bottom) {
-        if (customTipsView != null) {
-            if (customTipsView.getVisibility() != GONE) {
-                final LayoutParams lp = (LayoutParams) customTipsView.getLayoutParams();
-
-                final int measuredWidth = customTipsView.getMeasuredWidth();
-                final int measuredHeight = customTipsView.getMeasuredHeight();
-
-                final int width = 150;
-                final int height = 150;
-
-                int childLeft;
-                int childTop;
-                childLeft = targetViewRect.left - width - lp.rightMargin;
-                childTop = targetViewRect.bottom + lp.topMargin;
-
-                customTipsView.layout(childLeft, childTop, childLeft + measuredWidth, childTop + height);
-            }
-        }
     }
 
     private void initView() {
+        List<TipsViewBuilder.Params> paramsList = mViewBuilder.getParams();
+        if (!ToolUtils.isListEmpty(paramsList)) {
+            applyViewParams(paramsList);
+        }
 
         try {
 //            tipsBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_test_share);
             /*BitmapDrawable d = (BitmapDrawable) getContext().getResources().getDrawable(R.drawable.ic_test_share);
             if (d != null) {
-                tipsBitmap = d.getBitmap();
+                tipsBitmap = d.getBitmap()h;
             }*/
         } catch (Exception e) {
             e.printStackTrace();
@@ -147,60 +116,58 @@ public class TipsView extends FrameLayout {
         });
     }
 
-    public TipsView show(final View targetView) {
-        if (targetView == null) {
-            isPrepared = false;
+    private void applyViewParams(List<TipsViewBuilder.Params> paramsList) {
+        for (TipsViewBuilder.Params params : paramsList) {
+            setUpAndAddView(params);
+        }
+    }
+
+    private void setUpAndAddView(TipsViewBuilder.Params params) {
+        View tips = params.getTips();
+        if (tips != null) {
+            tips.setVisibility(INVISIBLE);
+            LayoutParams p = new LayoutParams(params.width, params.height);
+            p.setTipsParams(params);
+            addViewInLayout(tips, -1, p, true);
+        }
+    }
+
+
+    public static class LayoutParams extends FrameLayout.LayoutParams {
+        private TipsViewBuilder.Params mTipsParams;
+
+        public TipsViewBuilder.Params getTipsParams() {
+            return mTipsParams;
+        }
+
+        public LayoutParams setTipsParams(TipsViewBuilder.Params tipsParams) {
+            mTipsParams = tipsParams;
             return this;
         }
-        if (customTipsView != null) {//自定义View传入
-            addView(customTipsView);
-        } else if (imageView != null) {//bitmap方式
-            addView(imageView);
+
+        public LayoutParams(@NonNull Context c, @Nullable AttributeSet attrs) {
+            super(c, attrs);
         }
 
-        if (globalOffset == null) {
-            globalOffset = new Point();
-        }
-        if (targetViewRect == null) {
-            targetViewRect = new Rect();
-        }
-        globalOffset.set(0, 0);
-        targetViewRect.setEmpty();
-        targetView.getGlobalVisibleRect(targetViewRect);
-
-        if (!targetViewRect.isEmpty()) {
-            //statusbar的高度
-            targetViewRect.offset(0, -globalOffset.y);
-            isPrepared = true;
-        } else {
-            targetView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    targetView.getGlobalVisibleRect(targetViewRect, globalOffset);
-                    if (!targetViewRect.isEmpty()) {
-                        //statusbar的高度
-                        targetViewRect.offset(0, -globalOffset.y);
-                        isPrepared = true;
-                    }
-                    if (isPrepared) {
-                        setVisibility(VISIBLE);
-                        postInvalidate();
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                        targetView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                    } else {
-                        targetView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                    }
-                }
-            });
+        public LayoutParams(int width, int height) {
+            super(width, height);
         }
 
-        if (isPrepared) {
-            setVisibility(VISIBLE);
-            postInvalidate();
+        public LayoutParams(int width, int height, int gravity) {
+            super(width, height, gravity);
         }
-        return this;
+
+        public LayoutParams(@NonNull ViewGroup.LayoutParams source) {
+            super(source);
+        }
+
+        public LayoutParams(@NonNull ViewGroup.MarginLayoutParams source) {
+            super(source);
+        }
+
     }
+
+
 
     @Override
     protected void onDraw(Canvas canvas) {
