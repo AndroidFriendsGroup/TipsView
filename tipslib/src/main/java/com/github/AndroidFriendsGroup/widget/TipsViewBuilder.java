@@ -3,7 +3,6 @@ package com.github.AndroidFriendsGroup.widget;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Build;
 import android.view.Gravity;
@@ -11,6 +10,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
+
+import com.github.AndroidFriendsGroup.utils.ToolUtils;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ public class TipsViewBuilder {
     private WeakReference<Context> mContextWeakReference;
     private List<Params> mParams = new ArrayList<>();
     private View.OnClickListener mOnClickListener;
+    private int maskColor = 0xCC000000;
 
     private TipsViewBuilder(Context context) {
         mContextWeakReference = new WeakReference<>(context);
@@ -32,6 +34,15 @@ public class TipsViewBuilder {
 
     public static TipsViewBuilder with(Context context) {
         return new TipsViewBuilder(context);
+    }
+
+    public TipsViewBuilder setMaskColor(int maskColor) {
+        this.maskColor = maskColor;
+        return this;
+    }
+
+    int getMaskColor() {
+        return maskColor;
     }
 
     public ViewParams append(View v) {
@@ -72,8 +83,17 @@ public class TipsViewBuilder {
         return mParams;
     }
 
-    public TipsView show(Activity activity) {
+    public final TipsView show(Activity activity) {
         TipsView tipsView = build();
+        ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
+        final int childCount = decorView.getChildCount();
+        for (int i = childCount - 1; i >= 0; i--) {
+            View v = decorView.getChildAt(i);
+            if (v instanceof TipsView) {
+                decorView.removeViewInLayout(v);
+            }
+        }
+        tipsView.onShow();
         ((ViewGroup) activity.getWindow().getDecorView()).addView(tipsView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         return tipsView;
     }
@@ -84,6 +104,20 @@ public class TipsViewBuilder {
 
     private Context getContext() {
         return mContextWeakReference == null ? null : mContextWeakReference.get();
+    }
+
+    void destroy() {
+        if (!ToolUtils.isListEmpty(mParams)) {
+            for (Params param : mParams) {
+                param.destroy();
+            }
+            mParams = null;
+        }
+        if (mContextWeakReference != null) {
+            mContextWeakReference.clear();
+            mContextWeakReference = null;
+        }
+        mOnClickListener = null;
     }
 
 
@@ -97,7 +131,7 @@ public class TipsViewBuilder {
         int type;
         int width = ViewGroup.LayoutParams.WRAP_CONTENT;
         int height = ViewGroup.LayoutParams.WRAP_CONTENT;
-        int gravity = Gravity.BOTTOM | Gravity.LEFT;
+        int gravity = Gravity.BOTTOM ;
         Rect mTargetRect;
 
         private Params(TipsViewBuilder viewBuilder, int type) {
@@ -122,20 +156,19 @@ public class TipsViewBuilder {
 
         public Params<B> target(final View target) {
             this.target = target;
-            final Point globalOffset = new Point();
+            findTargetVisibleRect(target);
+            return this;
+        }
+
+        private void findTargetVisibleRect(final View target) {
             if (target != null) {
                 mTargetRect = new Rect();
-                target.getGlobalVisibleRect(mTargetRect, globalOffset);
-                if (!mTargetRect.isEmpty()) {
-                    mTargetRect.offset(0, -globalOffset.y);
-                } else {
+                target.getGlobalVisibleRect(mTargetRect);
+                if (mTargetRect.isEmpty()) {
                     target.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                         @Override
                         public void onGlobalLayout() {
-                            target.getGlobalVisibleRect(mTargetRect, globalOffset);
-                            if (!mTargetRect.isEmpty()) {
-                                mTargetRect.offset(0, -globalOffset.y);
-                            }
+                            target.getGlobalVisibleRect(mTargetRect);
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                                 target.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                             } else {
@@ -144,8 +177,16 @@ public class TipsViewBuilder {
                         }
                     });
                 }
+            } else {
+                mTargetRect = new Rect();
             }
-            return this;
+        }
+
+        public final Rect getTargetRect() {
+            if (mTargetRect == null) {
+                findTargetVisibleRect(target);
+            }
+            return mTargetRect;
         }
 
         public ViewParams append(View v) {
@@ -156,12 +197,20 @@ public class TipsViewBuilder {
             return mViewBuilder.append(bitmap);
         }
 
-        View getTips(){
+        View getTips() {
             return null;
         }
 
         B self() {
             return (B) this;
+        }
+
+        public TipsViewBuilder build() {
+            return mViewBuilder;
+        }
+
+        public TipsView show(Activity activity) {
+            return build().show(activity);
         }
 
         abstract void destroy();
@@ -178,10 +227,12 @@ public class TipsViewBuilder {
             this.customTipsView = customTipsView;
             return self();
         }
+
         @Override
         View getTips() {
             return customTipsView;
         }
+
         @Override
         void destroy() {
             customTipsView = null;
@@ -209,7 +260,6 @@ public class TipsViewBuilder {
         @Override
         void destroy() {
             imageView.setImageBitmap(null);
-            imageView = null;
         }
     }
 

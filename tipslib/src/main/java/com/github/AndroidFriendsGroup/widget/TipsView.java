@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
@@ -13,6 +12,7 @@ import android.support.annotation.AttrRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -35,15 +35,10 @@ public class TipsView extends FrameLayout {
     private static final String TAG = "TipsView";
     private static final int DEFAULT_RADIUS = -5;
 
-    private int maskColor = 0xCC000000;
 
     private Paint mPaint;
     private Paint mEraser;
 
-    private boolean isPrepared = false;
-
-    private Rect targetViewRect;
-    private Point globalOffset;
     //用来绘画的bitmap
     private Bitmap drawingBitmap;
     private Canvas drawCanvas;
@@ -67,32 +62,66 @@ public class TipsView extends FrameLayout {
     TipsView(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr, TipsViewBuilder builder) {
         super(context, attrs, defStyleAttr);
         mViewBuilder = builder;
+        setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         initView();
     }
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
+        final int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View child = getChildAt(i);
+            LayoutParams p = (LayoutParams) child.getLayoutParams();
+            TipsViewBuilder.Params mTipsParams = p.mTipsParams;
+            Rect targetRect = mTipsParams.getTargetRect();
+            int gravity = mTipsParams.gravity;
+            //默认定位到target的左下方
+            left = targetRect.left;
+            top = targetRect.bottom;
+
+
+            switch (gravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
+                case Gravity.LEFT:
+                case Gravity.START:
+                    left += -child.getMeasuredWidth() + p.leftMargin - p.rightMargin;
+                    break;
+                case Gravity.RIGHT:
+                case Gravity.END:
+                    left += targetRect.width() + p.leftMargin - p.rightMargin;
+                    break;
+                case Gravity.CENTER_HORIZONTAL:
+                    left += targetRect.centerX() - (left + (child.getMeasuredWidth() >> 1));
+                    break;
+                default:
+                    break;
+            }
+            switch (gravity & Gravity.VERTICAL_GRAVITY_MASK) {
+                case Gravity.TOP:
+                    top = targetRect.top - child.getMeasuredHeight() + p.topMargin - p.bottomMargin;
+                    break;
+                case Gravity.BOTTOM:
+                    //default
+                    break;
+                case Gravity.CENTER_VERTICAL:
+                    top = targetRect.centerY() - (top + (child.getMeasuredHeight() >> 1));
+                    break;
+                default:
+                    break;
+            }
+            right = left + child.getMeasuredWidth();
+            bottom = top + child.getMeasuredHeight();
+            child.layout(left, top, right, bottom);
+        }
     }
 
     private void initView() {
+        setWillNotDraw(false);
+        setVisibility(INVISIBLE);
         List<TipsViewBuilder.Params> paramsList = mViewBuilder.getParams();
         if (!ToolUtils.isListEmpty(paramsList)) {
             applyViewParams(paramsList);
         }
 
-        try {
-//            tipsBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_test_share);
-            /*BitmapDrawable d = (BitmapDrawable) getContext().getResources().getDrawable(R.drawable.ic_test_share);
-            if (d != null) {
-                tipsBitmap = d.getBitmap()h;
-            }*/
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        setWillNotDraw(false);
-        setVisibility(GONE);
         if (mPaint == null) {
             mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             mPaint.setDither(true);
@@ -111,7 +140,6 @@ public class TipsView extends FrameLayout {
                 if (mOnClickListener != null) {
                     mOnClickListener.onClick(v);
                 }
-                setVisibility(GONE);
             }
         });
     }
@@ -130,6 +158,15 @@ public class TipsView extends FrameLayout {
             p.setTipsParams(params);
             addViewInLayout(tips, -1, p, true);
         }
+    }
+
+    void onShow() {
+        final int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            getChildAt(i).setVisibility(View.VISIBLE);
+        }
+        setVisibility(View.VISIBLE);
+        postInvalidate();
     }
 
 
@@ -168,12 +205,10 @@ public class TipsView extends FrameLayout {
     }
 
 
-
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
-        if (!isPrepared) return;
+        if (getChildCount() <= 0 || mViewBuilder == null) return;
 
         final int width = getMeasuredWidth();
         final int height = getMeasuredHeight();
@@ -194,19 +229,17 @@ public class TipsView extends FrameLayout {
         //清除画布
         drawCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         //蒙层颜色
-        drawCanvas.drawColor(maskColor);
-        //掏空一个圈O
-        drawCanvas.drawCircle(targetViewRect.centerX(), targetViewRect.centerY(), DEFAULT_RADIUS + targetViewRect.width() / 2, mEraser);
-        /*if (tipsBitmap != null && !tipsBitmap.isRecycled()) {
-            int left = targetViewRect.centerX() - tipsBitmap.getWidth();
-            int top = targetViewRect.bottom + 5;
-            drawCanvas.drawBitmap(tipsBitmap, left, top, mPaint);
-        } else if(true){//添加自定义View
+        drawCanvas.drawColor(mViewBuilder.getMaskColor());
 
-        }*/
-        //画好bitmap后，把新画布应用到当前画布中
+        final int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View child = getChildAt(i);
+            LayoutParams p = (LayoutParams) child.getLayoutParams();
+            TipsViewBuilder.Params mTipsParams = p.mTipsParams;
+            Rect targetRect = mTipsParams.getTargetRect();
+            drawCanvas.drawCircle(targetRect.centerX(), targetRect.centerY(), DEFAULT_RADIUS + targetRect.width() / 2, mEraser);
+        }
         canvas.drawBitmap(drawingBitmap, 0, 0, null);
-
     }
 
     public OnClickListener getOnTapListener() {
@@ -234,6 +267,10 @@ public class TipsView extends FrameLayout {
         if (tipsBitmap != null) {
             tipsBitmap.recycle();
             tipsBitmap = null;
+        }
+        if (mViewBuilder != null) {
+            mViewBuilder.destroy();
+            mViewBuilder = null;
         }
     }
 }

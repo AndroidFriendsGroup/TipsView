@@ -1,13 +1,17 @@
 package com.github.AndroidFriendsGroup.demo;
 
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import com.github.AndroidFriendsGroup.R;
 import com.github.AndroidFriendsGroup.demo.utils.UIHelper;
+import com.github.AndroidFriendsGroup.widget.TipsViewBuilder;
 
 import java.util.Random;
 
@@ -38,8 +42,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 showTipsWithLayout(v);
-//                showTipsWithBitmap(v);
-//                showTips(v);
             }
         });
 
@@ -63,27 +65,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showTipsWithLayout(View v) {
-//        View tipsView = LayoutInflater.from(this).inflate(R.layout.layout_tips, null);
-//        TipsViewBuilder
-//                .with(this)
-//                .target(v)
-//                .customTips(tipsView)
-//                .show(this);
+        View tipsView = LayoutInflater.from(this).inflate(R.layout.layout_tips, null);
+        TipsViewBuilder
+                .with(this)
+                .append(BitmapFactory.decodeResource(getResources(),R.drawable.ic_test_share)).target(v).gravity(Gravity.LEFT)
+                .show(this);
     }
 
-    private void showTipsWithBitmap(View v) {
-//        Bitmap srcBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_test_share);
-//        TipsViewBuilder
-//                .with(this)
-//                .target(v)
-//                .bitmapTips(srcBitmap)
-//                .show(this);
-    }
-
-    private void showTips(View v) {
-//        TipsViewBuilder
-//                .with(this)
-//                .target(v)
-//                .show(this);
-    }
 }
