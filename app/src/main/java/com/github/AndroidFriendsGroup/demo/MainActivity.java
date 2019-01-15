@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         TipsViewBuilder
                 .with(this)
                 .append(BitmapFactory.decodeResource(getResources(),R.drawable.ic_test_share)).target(v).gravity(Gravity.LEFT)
+                .append(tipsView).target(mBtnRandomLayout)
                 .show(this);
     }
 
